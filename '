@@ -1,0 +1,42 @@
+(defwidget greeter [?text name]
+  (box :orientation "horizontal"
+       :haling "center"
+    text
+    (button :onclick "notify-send 'Hello' 'Hello, ${name}'"
+      "Greet")))
+
+(defwidget labeled-container [name]
+  (box :class "container"
+    name
+    (children)))
+
+(defvar time-visible false)
+(defpoll time 
+  :interval "1s"
+  :initial "initial-value"
+  :run-while time-visible
+  `date +%H:%M:%S`)
+
+(defwidget bar []
+  (greeter :text "Text" :name "Name")
+  (labeled-container :name "label name"
+    ("content"))
+  )
+
+(defwindow example
+  :monitor 0
+  :geometry (geometry 
+  :x "0%"
+  :y "20px"
+  :width "25%"
+  :height "26px"
+  :anchor "top center"
+              )
+  :stacking "fg"
+  :reserve (struts :distance "40px" :side "top")
+  :windowtype "dock"
+  :wm-ignore false
+
+  (bar)
+
+  )

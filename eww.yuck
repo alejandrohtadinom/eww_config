@@ -1,23 +1,128 @@
 (defwidget greeter [?text name]
-  (box :orientation "horizontal"
-    :haling "center"
+  (box :orientation "v"
+       :haling "center"
     text
     (button :onclick "notify-send 'Hello' 'Hello, ${name}'"
-      "Greet")
-    )
-  )
+      "Greet")))
 
-(defwindow example
+(defwidget workspaces []
+  (box :class "workspaces"
+    :orientation "v"
+    :space-evenly true
+    :valign "bottom"
+    :spacing 5
+  (button :onclick "hyprctl dispatch workspace name:web" "󰞉")
+  (button :onclick "hyprctl dispatch workspace name:code" "󰅨")
+  (button :onclick "hyprctl dispatch workspace name:term" "")
+  (button :onclick "hyprctl dispatch workspace name:file" "󰉋")
+  (button :onclick "hyprctl dispatch workspace name:img" "󰌨")
+  (button :onclick "hyprctl dispatch workspace name:media" "󱉺")
+  (button :onclick "hyprctl dispatch workspace name:conf" "")
+  (button :onclick "hyprctl dispatch workspace name:ims" "󱥁")
+  (button :onclick "hyprctl dispatch workspace name:game" "󰺵")
+  (button :onclick "hyprctl dispatch workspace name:steam" "")))
+
+(defwidget labeled-container [name]
+  (box :class "container"
+    name
+    (children)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Vars
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defpoll vol
+;;   :interval "1s"
+;;   :initial 0
+;;   )
+;;
+;; (defwidget vol []
+;;   )
+
+(defwidget launcher []
+  (box :class "launcher"
+    :orientation "v"
+    :valign "start"
+    (button :onclick "eww open --toggle dashboard" "󱄅")))
+
+(defpoll hour 
+  :interval "1m"
+  :initial "initial-value"
+  "date +%H")
+
+(defpoll minute 
+  :interval "10s"
+  :initial "initial-value"
+  "date +%M")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Polls
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defpoll volume :interval "999h" :initial 0 "wpctl get-volume @DEFAULT_AUDIO_SINK@ | cut -d ' ' -f 2 | sed 's/^0.//'")
+(defpoll mic :interval "999h" :initial 0 "wpctl get-volume @DEFAULT_SOURCE_SINK@ | cut -d ' ' -f 2 | sed 's/^0.//'")
+
+(defwidget power_button []
+  (box :class "power" 
+    :orientation "v"
+    :valign "start"
+    (button :onclick "eww open --toggle power_menu" "󰐦")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Widgets
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defwidget time []
+  (box :class "time"
+    :orientation "v"
+    :valign "center"
+    :spacing 1
+    hour
+    "..."
+    minute))
+
+(defwidget title [?text]
+  (box :orientation "v"
+    :valign "center"
+    text))
+
+(defwidget bar []
+  (box :orientation "v"
+    :valign "start"
+    (launcher)
+    (power_button)
+    (time)
+    (workspaces)))
+
+(defwidget dashboard []
+  (box :orientation "v"
+    :valign "center"
+    (title :text "titulo")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Windows
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Dashboard
+(defwindow dashboard
   :monitor 0
-  :geometry (geometry :x "0%"
-              :y "20px"
-              :width "90%"
-              :height "30px"
-              :anchor "top center"
-              )
+  :geometry (geometry :width "25%"
+              :height "100%"
+              :anchor "top left")
   :stacking "fg"
-  :reserve (struts :distance "40px" side "top")
   :windowtype "dock"
   :wm-ignore false
-  (greeter :text "Say hello!"
-  :name "Ale"))
+            (dashboard))
+
+;; Main bar
+(defwindow bar
+  :monitor 0
+  :geometry (geometry :width "32px"
+                      :height "100%"
+                      :anchor "left center")
+  :stacking "fg"
+  :exclusive true
+  :reserve (struts :distance "38px" :side "left")
+  :windowtype "dock"
+  :wm-ignore false
+  (bar))
