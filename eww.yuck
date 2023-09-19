@@ -1,35 +1,8 @@
-(defwidget greeter [?text name]
-  (box :orientation "v"
-       :haling "center"
-    text
-    (button :onclick "notify-send 'Hello' 'Hello, ${name}'"
-      "Greet")))
-
-(defwidget workspaces []
-  (box :class "workspaces"
-    :orientation "v"
-    :space-evenly true
-    :valign "bottom"
-    :spacing 5
-  (button :onclick "hyprctl dispatch workspace name:web" "󰞉")
-  (button :onclick "hyprctl dispatch workspace name:code" "󰅨")
-  (button :onclick "hyprctl dispatch workspace name:term" "")
-  (button :onclick "hyprctl dispatch workspace name:file" "󰉋")
-  (button :onclick "hyprctl dispatch workspace name:img" "󰌨")
-  (button :onclick "hyprctl dispatch workspace name:media" "󱉺")
-  (button :onclick "hyprctl dispatch workspace name:conf" "")
-  (button :onclick "hyprctl dispatch workspace name:ims" "󱥁")
-  (button :onclick "hyprctl dispatch workspace name:game" "󰺵")
-  (button :onclick "hyprctl dispatch workspace name:steam" "")))
-
-(defwidget labeled-container [name]
-  (box :class "container"
-    name
-    (children)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Vars
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar dashboard false)
 
 ;; (defpoll vol
 ;;   :interval "1s"
@@ -39,65 +12,122 @@
 ;; (defwidget vol []
 ;;   )
 
-(defwidget launcher []
-  (box :class "launcher"
-    :orientation "v"
-    :valign "start"
-    (button :onclick "eww open --toggle dashboard" "󱄅")))
-
-(defpoll hour 
-  :interval "1m"
-  :initial "initial-value"
-  "date +%H")
-
-(defpoll minute 
-  :interval "10s"
-  :initial "initial-value"
-  "date +%M")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Polls
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpoll volume :interval "999h" :initial 0 "wpctl get-volume @DEFAULT_AUDIO_SINK@ | cut -d ' ' -f 2 | sed 's/^0.//'")
-(defpoll mic :interval "999h" :initial 0 "wpctl get-volume @DEFAULT_SOURCE_SINK@ | cut -d ' ' -f 2 | sed 's/^0.//'")
+(defpoll hour 
+    :interval "1m"
+    :initial "initial-value"
+    "date +%H")
 
-(defwidget power_button []
-  (box :class "power" 
-    :orientation "v"
-    :valign "start"
-    (button :onclick "eww open --toggle power_menu" "󰐦")))
+(defpoll minute 
+    :interval "10s"
+    :initial "initial-value"
+    "date +%M")
+
+(defpoll volume 
+    :interval "999h"
+    :initial 0
+    "wpctl get-volume @DEFAULT_AUDIO_SINK@ | cut -d ' ' -f 2 | sed 's/^0.//'")
+
+(defpoll mic 
+    :interval "999h"
+    :initial 0
+    "wpctl get-volume @DEFAULT_SOURCE_SINK@ | cut -d ' ' -f 2 | sed 's/^0.//'")
+
+(defpoll brightness
+    :interval "1s"
+    "brightnessctl -m -d intel_backlight | awk -F, '{print substr($4, 0, length($4)-1)}' | tr -d '%'"
+    )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Listeners
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deflisten workspace
+    "scripts/workspaces.sh")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widgets
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defwidget launcher []
+  (box :class "launcher"
+       :orientation "v"
+       :valign "center"
+       (button :onclick "eww open --toggle dashboard" "󱄅")))
+
+(defwidget power_button []
+  (box :class "power" 
+       :orientation "v"
+       :valign "center"
+       (button :onclick "eww open --toggle power_window" "󰐦")))
+
+(defwidget workspaces []
+  (literal :content workspace))
+
 (defwidget time []
-  (box :class "time"
-    :orientation "v"
-    :valign "center"
-    :spacing 1
-    hour
-    "..."
-    minute))
+  (box 
+   :class "time"
+   :orientation "v"
+   :valign "center"
+   hour
+   minute))
 
 (defwidget title [?text]
   (box :orientation "v"
-    :valign "center"
-    text))
-
-(defwidget bar []
-  (box :orientation "v"
-    :valign "start"
-    (launcher)
-    (power_button)
-    (time)
-    (workspaces)))
+       :valign "center"
+       text))
 
 (defwidget dashboard []
-  (box :orientation "v"
-    :valign "center"
-    (title :text "titulo")))
+  (box
+   :class "dashboard"
+   :orientation "v"
+   :valign "center"
+   :spacing 10
+   :space-evenly true
+   (button :onclick "eww open --toggle dashboard" "Cerrar")
+   ))
+
+(defwidget app_launcher []
+  (box
+   :class "app_launcher"
+   :orientation "v"
+   :halign "center"
+   :space-evenly false
+   :spacing 3
+   (button :onclick "firefox" "󰈹")
+   (button :onclick "edge" "󰇩")
+   (button :onclick "kitty" "")
+   (button :onclick "kitty" "󰆍")
+   (button :onclick "nautilus" "󰉋")
+   )
+  )
+
+(defwidget power_menu []
+  (box
+   :class "power_menu"
+   :orientation "h"
+   :halign "center"
+   :space-evenly true
+   :spacing 10
+   (button :onclick "systemctl shutdown" "󰐥")
+   (button :onclick "systemctl reboot" "󰜉")
+   (button :onclick "systemctl suspend" "󰤄")))
+
+;; Main bar
+(defwidget bar []
+  (box
+   :class "eww_bar"
+   :orientation "v"
+   :valign "center"
+   :space-evenly false
+   :spacing 0
+   (launcher)
+   (workspaces)
+   (time)
+   (power_button)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Windows
@@ -105,24 +135,43 @@
 
 ;; Dashboard
 (defwindow dashboard
-  :monitor 0
-  :geometry (geometry :width "25%"
-              :height "100%"
-              :anchor "top left")
-  :stacking "fg"
-  :windowtype "dock"
-  :wm-ignore false
-            (dashboard))
+    :monitor 0
+    :geometry (geometry
+               :x 48
+               :y 0
+               :width "50%"
+               :height "90%"
+               :anchor "center left")
+    :stacking "fg"
+    :vexpand flase
+    :hexpand flase
+    :windowtype "dock"
+    :wm-ignore false
+    (dashboard))
+
+(defwindow power_window
+    :monitor 0
+    :geometry (geometry
+               :width "25%"
+               :height "10%"
+               :anchor "center center")
+    :stacking "fg"
+    :windowtype "dock"
+    :wm-ignore false
+    (power_menu))
 
 ;; Main bar
 (defwindow bar
-  :monitor 0
-  :geometry (geometry :width "32px"
-                      :height "100%"
-                      :anchor "left center")
-  :stacking "fg"
-  :exclusive true
-  :reserve (struts :distance "38px" :side "left")
-  :windowtype "dock"
-  :wm-ignore false
-  (bar))
+    :monitor 0
+    :geometry (geometry
+               :x 2
+               :y 0
+               :width "48px"
+               :height "98%"
+               :anchor "center left")
+    :stacking "fg"
+    :vexpand false
+    :hexpand false
+    :windowtype "dock"
+    :wm-ignore false
+    (bar))
